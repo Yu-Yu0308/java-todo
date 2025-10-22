@@ -6,86 +6,87 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
+import java.util.Scanner;
 
-public class todo {
+public class Todo {
+
+    private static final String    CSV_FILE_PATH       =   "todoList.csv";    //ファイルパス
+    private static final String    COMMA               =   ",";
+    private static final String    COMPLETE            =   "[完]";
+    private static final String    NOT_COMPLETE        =   "[未]";
+    private static final String    NOT_COMPLETE_SIGNAL =   "0";
+
     public static void main(String[] args) {
-
         
-        final String    CSV_FILE_PATH       =   "todoList.csv";    //ファイルパス
-        final String    COMMA               =   ",";
-        final String    COMPLETE            =   "[完]";
-        final String    NOT_COMPLETE        =   "[未]";
-        final String    NOT_COMPLETE_SIGNAL =   "0";
         final String[]  ACTION_SIGNAL       =   {"Delete", "Add", "Edit", "Show"};
         final String[]  SHOW_SIGNAL         =   {"All", "Filter", "Sort", "FilterSort"};
         final String[]  FILTERING_SIGNAL    =   {"Comp", "NComp", "Category", "Priority"};
-        final String[]  SORT_SIGNAL         =   {"Priority", "Time", "Status"};     
+        final String[]  SORT_SIGNAL         =   {"Priority", "Time", "Status"};
+        Boolean         ACTION_FLAG         =   true;
+        Boolean         SELECT_STATUS_FLAG  =   true;      
 
-        int deleteNum = Integer.parseInt(args[0]); 
 
-        List<String> todoLists = new ArrayList<>(getListFromFile(CSV_FILE_PATH));      //ファイルから読み込んだtodoを入れるためのリストの用意
+        Scanner sc = new Scanner(System.in);
+        List<String> todoLists = new ArrayList<>(getListFromFile());      //ファイルから読み込んだtodoを入れるためのリストの用意
 
-        System.out.println("予定一覧(削除前)");
-        int num;
-        for(int i = 0; i < todoLists.size(); i++){
+        System.out.println("予定一覧");
+        show(todoLists);
 
-            String todoRecode = todoLists.get(i);                       //todoとtodoの状態を取得
-            String[] forSpritRecode = todoRecode.split(COMMA);          //todoと状態を分割
+        System.out.println("アクションを選択してください");
+        System.out.println("1: Add  2: Delete   3: Edit    4: Show");
+        String action = sc.nextLine();
 
-            String todo = forSpritRecode[0];                            //todoを取得
-            String todoStatus = forSpritRecode[1];                      //todoの状態を取得
+        do{
+            switch (action) {
+                case Action.ADD:
+                    System.out.println("タスク名を入力してください。");
+                    String task = sc.nextLine();
+                    
+                    SELECT_STATUS_FLAG = false;
+                    String taskStatus = "";
+                    
+                    while(!SELECT_STATUS_FLAG){
+                        System.out.println("状態を「0（未完了)」または「1（完了）」で入力してください。");
+                        taskStatus = sc.nextLine();
+                        if(taskStatus.equals( Status.COMPLETE ) || taskStatus.equals( Status.NOT_COMPLETE ) ){
+                            SELECT_STATUS_FLAG = true;
+                        }
+                    }
+    
+                    Operate.add(todoLists, task, taskStatus);
+                    show(todoLists);  // 追加後の一覧を表示
 
-            //タスクが「完了」か「未完了」かの判断
-            if(todoStatus.equals(NOT_COMPLETE_SIGNAL)){
-                todoStatus = COMPLETE;
-            }else{
-                todoStatus = NOT_COMPLETE;
+                    ACTION_FLAG = true;
+    
+                    break;
+    
+                case Action.DELETE:
+                    ACTION_FLAG = true;
+                    break;
+                
+                case Action.EDIT:
+                    ACTION_FLAG = true;
+                    break;
+                
+                case Action.SHOW:
+                    ACTION_FLAG = true;
+                    break;
+                
+                default:
+                    System.out.println("1~4で選択してください。");
+                    System.out.println("1: Add  2: Delete   3: Edit    4: Show");
+                    action = sc.nextLine();
+                    ACTION_FLAG = false;
             }
+        }while(!ACTION_FLAG);
 
-            num = i + 1;
 
-            System.out.println(todoStatus + "   " + num + "：" + todo);
-        }
 
-        todoLists.remove(deleteNum-1);                                 //リストから任意のタスクを削除
-
-        //ファイルの上書き
-        try {
-            BufferedWriter bw = new BufferedWriter(new FileWriter(CSV_FILE_PATH, StandardCharsets.UTF_8));
-            for(String list : todoLists){
-                bw.write(list);
-                bw.newLine();
-            }
-            bw.close();
-        } catch (Exception e) {
-            System.out.println(e);
-        }
-
-        System.out.println("予定一覧(削除後)");
-        num = 0;
-        for(int i = 0; i < todoLists.size(); i++){
-
-            String todoRecode = todoLists.get(i);                       //todoとtodoの状態を取得
-            String[] forSpritRecode = todoRecode.split(COMMA);          //todoと状態を分割
-
-            String todo = forSpritRecode[0];                            //todoを取得
-            String todoStatus = forSpritRecode[1];                      //todoの状態を取得
-
-            //タスクが「完了」か「未完了」かの判断
-            if(todoStatus.equals(NOT_COMPLETE_SIGNAL)){
-                todoStatus = COMPLETE;
-            }else{
-                todoStatus = NOT_COMPLETE;
-            }
-
-            num = i + 1;
-
-            System.out.println(todoStatus + "   " + num + "：" + todo);
-        }
+        sc.close();
 
     }
 
-    static List<String> getListFromFile(String CSV_FILE_PATH){
+    static List<String> getListFromFile(){
 
         List<String> Lists = new ArrayList<>();
         try{
@@ -112,4 +113,42 @@ public class todo {
 
         return Lists;
     }
+
+    static void show(List<String> lists){
+        int num;
+        for(int i = 0; i < lists.size(); i++){
+
+            String todoRecode = lists.get(i);                       //todoとtodoの状態を取得
+            String[] forSpritRecode = todoRecode.split(COMMA);          //todoと状態を分割
+
+            String todo = forSpritRecode[0];                            //todoを取得
+            String todoStatus = forSpritRecode[1];                      //todoの状態を取得
+
+            //タスクが「完了」か「未完了」かの判断
+            if(todoStatus.equals(NOT_COMPLETE_SIGNAL)){
+                todoStatus = NOT_COMPLETE;
+            }else{
+                todoStatus = COMPLETE;
+            }
+
+            num = i + 1;
+
+            System.out.println(todoStatus + "   " + num + "：" + todo);
+        }
+    }
+
+    static void overwriting(List<String> lists){
+        try {
+            BufferedWriter bw = new BufferedWriter(new FileWriter(CSV_FILE_PATH, StandardCharsets.UTF_8));
+            for(String list : lists){
+                bw.write(list);
+                bw.newLine();
+            }
+            bw.close();
+        } catch (Exception e) {
+            System.out.println(e);
+        }
+    }
+
+
 }
