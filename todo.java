@@ -10,27 +10,33 @@ import java.util.Scanner;
 
 public class Todo {
 
-    private static final String    CSV_FILE_PATH       =   "todoList.csv";    //ファイルパス
-    private static final String    COMMA               =   ",";
-    private static final String    COMPLETE            =   "[完]";
-    private static final String    NOT_COMPLETE        =   "[未]";
-    private static final String    NOT_COMPLETE_SIGNAL =   "0";
+    private static final String    CSV_FILE_PATH              =   "todoList.csv";    //ファイルパス
+
+    public static final String    COMPLETE                    =   "[完]";
+    public static final String    NOT_COMPLETE                =   "[未]";
+    public static final String    NOT_COMPLETE_SIGNAL         =   "0";
+    public static final String    COMMA                       =   ",";
+    public static final int       ELE_NUM_OF_TODO_NUM         =   0;
+    public static final int       ELE_NUM_OF_TODO_CONTENT     =   1;
+    public static final int       ELE_NUM_OF_TODO_STATE       =   2;
 
     public static void main(String[] args) {
         
-        final String[]  ACTION_SIGNAL       =   {"Delete", "Add", "Edit", "Show"};
-        final String[]  SHOW_SIGNAL         =   {"All", "Filter", "Sort", "FilterSort"};
-        final String[]  FILTERING_SIGNAL    =   {"Comp", "NComp", "Category", "Priority"};
-        final String[]  SORT_SIGNAL         =   {"Priority", "Time", "Status"};
-        Boolean         ACTION_FLAG         =   true;
-        Boolean         SELECT_STATUS_FLAG  =   true;      
+        final String[]  ACTION_SIGNAL               =   {"Delete", "Add", "Edit", "Show"};
+        final String[]  SHOW_SIGNAL                 =   {"All", "Filter", "Sort", "FilterSort"};
+        final String[]  FILTERING_SIGNAL            =   {"Comp", "NComp", "Category", "Priority"};
+        final String[]  SORT_SIGNAL                 =   {"Priority", "Time", "Status"};
+        Boolean         actionFlag                  =   false;
+        Boolean         selectStatusFlag            =   false;
+        Boolean         selectDeleteOptionFlag      =   false;
+           
 
 
         Scanner sc = new Scanner(System.in);
         List<String> todoLists = new ArrayList<>(getListFromFile());      //ファイルから読み込んだtodoを入れるためのリストの用意
 
         System.out.println("予定一覧");
-        show(todoLists);
+        show();
 
         System.out.println("アクションを選択してください");
         System.out.println("1: Add  2: Delete   3: Edit    4: Show");
@@ -38,47 +44,91 @@ public class Todo {
 
         do{
             switch (action) {
+
                 case Action.ADD:
-                    System.out.println("タスク名を入力してください。");
-                    String task = sc.nextLine();
+                //操作をキャンセルするときの処理を後で追加
+                    System.out.println("Todo名を入力してください。");
+                    String addTodo = sc.nextLine();
                     
-                    SELECT_STATUS_FLAG = false;
-                    String taskStatus = "";
+                    selectStatusFlag = false;
+                    String todoStatus = "";
                     
-                    while(!SELECT_STATUS_FLAG){
+                    while(!selectStatusFlag){
+
                         System.out.println("状態を「0（未完了)」または「1（完了）」で入力してください。");
-                        taskStatus = sc.nextLine();
-                        if(taskStatus.equals( Status.COMPLETE ) || taskStatus.equals( Status.NOT_COMPLETE ) ){
-                            SELECT_STATUS_FLAG = true;
+                        todoStatus = sc.nextLine();
+
+                        if(todoStatus.equals( Status.COMPLETE ) || todoStatus.equals( Status.NOT_COMPLETE ) ){
+
+                            selectStatusFlag = true;
+
                         }
+
                     }
     
-                    Operate.add(todoLists, task, taskStatus);
-                    show(todoLists);  // 追加後の一覧を表示
+                    Operate.add(todoLists, addTodo, todoStatus);
+                    show();  // 追加後の一覧を表示
 
-                    ACTION_FLAG = true;
+                    actionFlag = true;
     
                     break;
     
                 case Action.DELETE:
-                    ACTION_FLAG = true;
+
+                    //消したいTodoがリスト上に存在するかの確認
+                    selectDeleteOptionFlag = false;
+
+                    while(!selectDeleteOptionFlag){
+
+                        //消したいTodoの選択
+                        System.out.println("消したいTodoの番号を選択してください。");
+                        show();
+                        String deleteTodoNum = sc.nextLine();
+
+                        // 拡張for文の代わりに通常のfor文を使用
+                        for (int i = 0; i < todoLists.size(); i++) {
+                            String todo = todoLists.get(i);
+                            String[] forSpritRecode = todo.split(COMMA);
+                            String todoEleNum = forSpritRecode[ELE_NUM_OF_TODO_NUM];
+    
+                            if ( deleteTodoNum.equals(todoEleNum) ) {
+    
+                                Operate.delete(todoLists, Integer.parseInt(deleteTodoNum));
+                                selectDeleteOptionFlag = true;
+                                break; // 削除後はループを抜ける
+    
+                            }else if ( deleteTodoNum.equals("0")){
+    
+                                System.out.println("「削除」をキャンセルしました。");
+                                selectDeleteOptionFlag = true;
+                                //ここの機能を後で追加
+                                break; // キャンセル時もループを抜ける
+    
+                            }
+                        }
+
+                    }
+                    
+                    show();  // 追加後の一覧を表示
+                    actionFlag = true;
+                    
                     break;
                 
                 case Action.EDIT:
-                    ACTION_FLAG = true;
+                    actionFlag = true;
                     break;
                 
                 case Action.SHOW:
-                    ACTION_FLAG = true;
+                    actionFlag = true;
                     break;
                 
                 default:
                     System.out.println("1~4で選択してください。");
                     System.out.println("1: Add  2: Delete   3: Edit    4: Show");
                     action = sc.nextLine();
-                    ACTION_FLAG = false;
+                    actionFlag = false;
             }
-        }while(!ACTION_FLAG);
+        }while(!actionFlag);
 
 
 
@@ -114,26 +164,26 @@ public class Todo {
         return Lists;
     }
 
-    static void show(List<String> lists){
-        int num;
-        for(int i = 0; i < lists.size(); i++){
+    static void show(){
 
-            String todoRecode = lists.get(i);                       //todoとtodoの状態を取得
-            String[] forSpritRecode = todoRecode.split(COMMA);          //todoと状態を分割
+        List<String> todoLists = new ArrayList<>(getListFromFile());         //ファイルから読み込んだtodoを入れるためのリストの用意
 
-            String todo = forSpritRecode[0];                            //todoを取得
-            String todoStatus = forSpritRecode[1];                      //todoの状態を取得
+        for(int i = 0; i < todoLists.size(); i++){
 
-            //タスクが「完了」か「未完了」かの判断
+            String todoRecode = todoLists.get(i);                            //todoとtodoの状態を取得
+            String[] forSpritRecode = todoRecode.split(COMMA);              //todoと状態を分割
+
+            String todoNum = forSpritRecode[ELE_NUM_OF_TODO_NUM];
+            String todo = forSpritRecode[ELE_NUM_OF_TODO_CONTENT];          //todoを取得
+            String todoStatus = forSpritRecode[ELE_NUM_OF_TODO_STATE];      //todoの状態を取得
+
+            //Todoが「完了」か「未完了」かの判断
             if(todoStatus.equals(NOT_COMPLETE_SIGNAL)){
                 todoStatus = NOT_COMPLETE;
             }else{
                 todoStatus = COMPLETE;
             }
-
-            num = i + 1;
-
-            System.out.println(todoStatus + "   " + num + "：" + todo);
+            System.out.println(todoStatus + "   " + todoNum + "：" + todo);
         }
     }
 
@@ -149,6 +199,7 @@ public class Todo {
             System.out.println(e);
         }
     }
+
 
 
 }
