@@ -22,11 +22,7 @@ public class Todo {
     public static final String ACTION_CANCEL_SIGNAL = "0";
 
     public static void main(String[] args) {
-        
-        final String[] ACTION_SIGNAL = {"Delete", "Add", "Edit", "Show"};
-        final String[] SHOW_SIGNAL = {"All", "Filter", "Sort", "FilterSort"};
-        final String[] FILTERING_SIGNAL = {"Comp", "NComp", "Category", "Priority"};
-        final String[] SORT_SIGNAL = {"Priority", "Time", "Status"};
+
         Boolean actionFlag = false;
         Boolean selectStatusFlag = false;
         Boolean selectDeleteOptionFlag = false;
